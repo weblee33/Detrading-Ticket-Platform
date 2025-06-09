@@ -1,0 +1,8 @@
+{
+  "name": "My Concert Ticket",
+  "description": "This is a concert NFT ticket.",
+  "image": "https://raw.githubusercontent.com/weblee33/Detrading-Ticket-Platform/main/public/bp.png",
+  "attributes": [
+    { "trait_type": "Type", "value": "VIP" }
+  ]
+}
