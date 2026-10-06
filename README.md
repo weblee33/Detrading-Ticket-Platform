@@ -22,6 +22,8 @@ Conventional concert ticketing systems suffer from severe scalping, counterfeit 
 
 ## Smart Contract Details
 
+> **Source availability:** this repository currently includes the frontend ABI but not the original Solidity source, deployment scripts, compiler settings or contract tests. The descriptions below document the expected interface and are not a completed smart-contract security audit.
+
 ### Key Data Structures:
 
 ```solidity
@@ -69,6 +71,25 @@ The frontend is implemented in React.js using the `ethers.js` library for smart 
 * The owner can mint tickets by filling out event details.
 * All users can view owned tickets and list them for sale.
 * Other users can purchase available listings.
+
+## Local setup
+
+```bash
+npm ci
+cp .env.example .env.local
+npm start
+```
+
+Set `REACT_APP_CHAIN_ID` and `REACT_APP_CONTRACT_ADDRESS` in `.env.local` to match your Ganache deployment. The app refuses to continue when the address has no deployed bytecode. Do not commit private keys or seed phrases.
+
+Run verification with:
+
+```bash
+CI=true npm test -- --runInBand
+npm run build
+```
+
+See `DEMO_GUIDE.md`, `REVIEW.md`, `TEST_RESULTS.md` and `NEXT_STEPS.md` for the verified workflow, known limitations and proposed extensions.
 
 ## Technologies Used
 
