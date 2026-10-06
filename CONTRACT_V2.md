@@ -51,7 +51,6 @@ The demo uses Hardhat's deterministic local accounts and test ETH only. Never im
 
 ## Not included yet
 
-- Camera-based QR scanning; the Demo currently supports a QR image plus paste/load helper.
 - Event cancellation and refunds.
 - Resale price caps or deadlines.
 - Independent audit or production/mainnet readiness.

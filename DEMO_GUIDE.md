@@ -29,7 +29,7 @@ Import only the publicly known development accounts printed by `npm run chain`. 
 5. Reconnect Alice, create or cancel a listing to demonstrate escrow behavior.
 6. Connect the organizer (Account #0), open **主辦方後台**, and mint a new ticket type to a selected Demo address.
 7. Connect Bob, open **入場票證**, select his VIP ticket and sign a five-minute QR pass.
-8. Connect gate staff (Account #3), open **驗票工作台**, load the latest Demo pass and redeem it.
+8. Connect gate staff (Account #3), open **驗票工作台**, scan the QR with a camera or upload its image, then redeem it. For a one-device presentation, use the manual latest-pass helper.
 9. Paste the same pass again to demonstrate that the contract rejects replay.
 
 ## Interface states to explain

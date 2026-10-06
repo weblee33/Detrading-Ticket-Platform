@@ -32,7 +32,8 @@ The browser stores the latest generated pass in `localStorage` only so a one-lap
 
 ## Remaining production work
 
-- Replace the Demo paste/load helper with a camera scanner and strict QR size limits.
+- Test camera scanning across the supported production device/browser matrix and serve it over HTTPS.
+- Add operational monitoring and rate controls for failed admission attempts.
 - Add event-specific admission windows rather than only a short pass deadline.
 - Define whether a redeemed ticket should remain as a collectible; the current Demo burns it.
 - Use managed gate-staff keys or account abstraction instead of ordinary browser wallets.

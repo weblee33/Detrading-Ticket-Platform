@@ -14,7 +14,9 @@ export function encodeAdmissionPass(pass) {
 }
 
 export function parseAdmissionPass(value) {
+  if (typeof value === 'string' && value.length > 4096) throw new Error('票證資料過長');
   const raw = typeof value === 'string' ? JSON.parse(value.trim()) : value;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('票證格式無效');
   const pass = {
     version: raw.v,
     contract: raw.c,
