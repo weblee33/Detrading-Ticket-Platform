@@ -1,6 +1,7 @@
 /* global BigInt */
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
+import localDeployment from './deployments/local.json';
 import {
   calculateTotalWei,
   friendlyError,
@@ -12,7 +13,7 @@ import {
 } from './contractUtils';
 
 // 請填入你的合約地址和 ABI
-const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS || '0x0a52e1F23FbD9a08a73eE8b6Ea3dd7cDE7db2C0E';
+const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS || localDeployment.address;
 const contractABI = [
 			{
 				"inputs": [],
@@ -857,7 +858,7 @@ const contractABI = [
 				"type": "function"
 			}
 		];
-const ganacheChainId = process.env.REACT_APP_CHAIN_ID || '0x539'; // 1337
+const ganacheChainId = process.env.REACT_APP_CHAIN_ID || localDeployment.chainId || '0x7a69'; // Hardhat 31337
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 // 主題色

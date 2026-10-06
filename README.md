@@ -91,6 +91,17 @@ npm run build
 
 See `DEMO_GUIDE.md`, `REVIEW.md`, `TEST_RESULTS.md` and `NEXT_STEPS.md` for the verified workflow, known limitations and proposed extensions.
 
+## Reproducible v2 demo contract
+
+The `contracts/TicketMarketplaceV2.sol` implementation is a newly created demo contract, not a recovered copy of the original contract. It adds a reproducible Hardhat environment, escrowed listings, exact-payment purchases and automated contract tests.
+
+```bash
+npm run compile:contract
+npm run test:contract
+```
+
+For the full local deployment and seeded demo sequence, see `CONTRACT_V2.md`.
+
 ## Technologies Used
 
 * **Solidity (ERC-1155)**
