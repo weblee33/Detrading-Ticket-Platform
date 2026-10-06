@@ -43,3 +43,11 @@ Results on 2026-10-06:
 - `npm run test:contract`: **passed**, 14 tests including authorized redemption, ticket burn, used-pass tracking, replay rejection, expiration, maximum lifetime, invalid signature and unauthorized operator.
 - `CI=true npm test -- --runInBand`: **passed**, 4 suites / 16 tests including admission payload encoding and validation.
 - `npm run verify:demo`: **passed**, deployment, seed data, signed admission, on-chain redemption and replay rejection.
+
+## Camera QR scanner and documentation
+
+- `CI=true npm test -- --runInBand`: **passed**, 5 suites / 19 tests. Scanner tests cover explicit camera activation, denied-permission feedback and invalid upload rejection; admission parsing also rejects null and oversized payloads.
+- `npm run test:contract`: **passed**, 14 contract tests.
+- `npm run build`: **passed**. The optimized bundle compiled with non-blocking upstream `html5-qrcode` source-map and dated Browserslist warnings.
+- `npm run demo`: **passed**. The local chain deployed and seeded successfully, and the React development bundle compiled.
+- Camera behavior is unit-tested with a browser API mock. Physical device/browser compatibility still requires a real HTTPS or localhost environment and is documented as production work.

@@ -122,7 +122,24 @@ textarea { min-height:150px; resize:vertical; }
 .pass-placeholder strong,.pass-placeholder small { display:block; margin-top:8px; }
 .pass-placeholder small { color:var(--muted); }
 .digital-pass .pass-placeholder small { color:#aebce8; }
-.gate-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.qr-scanner { margin-bottom:18px; }
+.qr-reader { min-height:260px; overflow:hidden; border:1px dashed #cbd3e4; border-radius:16px; background:linear-gradient(135deg,#f8faff,#eef2f9); }
+.qr-reader:not(.is-active) { display:grid; place-items:center; }
+.qr-reader:not(.is-active)::before { content:'⌗'; color:#9ba7bd; font-size:58px; }
+.qr-reader video { border-radius:15px; object-fit:cover; }
+.scanner-status { margin:10px 0; display:flex; align-items:center; gap:8px; color:var(--muted); font-size:12px; }
+.scanner-status>span { width:8px; height:8px; border-radius:50%; background:#a9b2c2; }
+.scanner-status .status-live { background:#20b486; box-shadow:0 0 0 4px rgba(32,180,134,.13); }
+.scanner-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.file-button { cursor:pointer; text-align:center; }
+.file-button input { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
+.privacy-note { display:block; margin-top:10px; color:var(--muted); line-height:1.5; }
+.manual-entry { margin:18px 0; padding:14px 16px; border:1px solid var(--line); border-radius:12px; }
+.manual-entry summary { cursor:pointer; color:#46516a; font-size:13px; font-weight:700; }
+.manual-entry label { margin-top:14px; }
+.manual-entry textarea { min-height:95px; }
+.text-button { padding:0; border:0; color:var(--blue); background:none; cursor:pointer; font:inherit; font-size:12px; font-weight:700; }
+.gate-actions { display:grid; gap:10px; }
 .inline-error { margin-top:14px; padding:11px 13px; border-radius:10px; color:#a62b40; background:#fff0f3; font-size:13px; }
 .validation-panel { display:grid; align-content:center; }
 .validation-panel.has-pass { background:#f5fffb; border-color:#c8f0e4; }
@@ -137,5 +154,5 @@ textarea { min-height:150px; resize:vertical; }
 footer { max-width:1180px; margin:0 auto; padding:24px 28px 38px; border-top:1px solid var(--line); color:var(--muted); font-size:12px; display:flex; justify-content:space-between; gap:20px; }
 @media (max-width:900px) { .site-header{align-items:flex-start}.wallet-bar{align-items:flex-end;flex-direction:column}.hero{grid-template-columns:1fr;padding:44px 34px;gap:28px}.hero-proof{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}.hero-proof div{border:0;padding:12px;background:rgba(255,255,255,.07);border-radius:12px;display:block}.hero-proof strong,.hero-proof span,.hero-proof small{display:block}.hero-proof strong{margin:5px 0;font-size:24px}.card-grid{grid-template-columns:repeat(2,1fr)} }
 @media (max-width:900px) { .admission-layout,.gate-layout{grid-template-columns:1fr} }
-@media (max-width:640px) { .site-header,main,footer{padding-left:18px;padding-right:18px}.site-header{flex-direction:column}.wallet-bar{width:100%;align-items:stretch}.wallet-actions{display:grid;grid-template-columns:1fr 1fr}.hero{padding:36px 22px;border-radius:20px}.hero h1{font-size:39px}.hero-proof{grid-template-columns:1fr}.page-tabs{gap:18px;overflow-x:auto}.page-tabs button{white-space:nowrap}.section-heading{align-items:flex-start;flex-direction:column}.card-grid,.metrics-grid,.skeleton-grid,.mint-form{grid-template-columns:1fr}.field-wide{grid-column:auto}.gate-actions{grid-template-columns:1fr}.pass-details{grid-template-columns:1fr}footer{flex-direction:column} }
+@media (max-width:640px) { .site-header,main,footer{padding-left:18px;padding-right:18px}.site-header{flex-direction:column}.wallet-bar{width:100%;align-items:stretch}.wallet-actions{display:grid;grid-template-columns:1fr 1fr}.hero{padding:36px 22px;border-radius:20px}.hero h1{font-size:39px}.hero-proof{grid-template-columns:1fr}.page-tabs{gap:18px;overflow-x:auto}.page-tabs button{white-space:nowrap}.section-heading{align-items:flex-start;flex-direction:column}.card-grid,.metrics-grid,.skeleton-grid,.mint-form{grid-template-columns:1fr}.field-wide{grid-column:auto}.gate-actions,.scanner-actions{grid-template-columns:1fr}.pass-details{grid-template-columns:1fr}footer{flex-direction:column} }
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important} }

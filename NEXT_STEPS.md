@@ -4,7 +4,8 @@
 
 - Implemented in Demo v2: holder-signed contract/chain-bound payload, five-minute expiry, random nonce, authorized gate staff, atomic used-pass marking and one-unit burn.
 - Verified: replay, expiry, invalid signature, insufficient balance and unauthorized operator are rejected.
-- Remaining: camera scanner, event-specific admission windows, managed staff credentials and optional post-entry collectible.
+- Camera and image-based QR scanning is implemented with payload/image limits, permission feedback and manual Demo fallback.
+- Remaining: event-specific admission windows, managed staff credentials, cross-device browser testing and optional post-entry collectible.
 
 ## Controlled resale
 

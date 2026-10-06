@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { admissionExpiry, parseAdmissionPass } from '../utils/admission';
 import { shortAddress } from '../utils/display';
+import QrScanner from './QrScanner';
 
 export default function GateView({ tickets, pendingAction, onRedeem }) {
   const [input, setInput] = useState('');
@@ -17,6 +18,11 @@ export default function GateView({ tickets, pendingAction, onRedeem }) {
     if (!latest) setLocalError('這個瀏覽器還沒有最近產生的 Demo 票證');
     else { setInput(latest); setLocalError(''); }
   };
+  const acceptScan = value => {
+    parseAdmissionPass(value);
+    setInput(value);
+    setLocalError('');
+  };
   const redeem = async () => {
     try { await onRedeem(parseAdmissionPass(input)); setInput(''); }
     catch (error) { setLocalError(error.message); }
@@ -27,9 +33,14 @@ export default function GateView({ tickets, pendingAction, onRedeem }) {
       <section className="gate-scanner">
         <span className="section-kicker">Gate Staff Console</span>
         <h2>驗票工作台</h2>
-        <p>掃描器整合前，可貼上 QR 票證內容；Demo 也能直接載入同一瀏覽器最近產生的票證。</p>
-        <label>QR 票證資料<textarea value={input} onChange={event => { setInput(event.target.value); setLocalError(''); }} placeholder="掃描或貼上票證 JSON" /></label>
-        <div className="gate-actions"><button className="button button-quiet" type="button" onClick={loadLatest}>載入最近 Demo 票證</button><button className="button button-primary" type="button" disabled={!parsed || parsed.invalid || Boolean(pendingAction)} onClick={redeem}>{pendingAction?.startsWith('redeem-') ? '鏈上核銷中…' : '確認核銷一張票'}</button></div>
+        <p>用裝置相機掃描持票人的 QR Code，也可上傳截圖。辨識只解析票證，真正核銷仍由智慧合約判定。</p>
+        <QrScanner onScan={acceptScan} />
+        <details className="manual-entry">
+          <summary>無法使用鏡頭？改用手動輸入</summary>
+          <label>QR 票證資料<textarea value={input} onChange={event => { setInput(event.target.value); setLocalError(''); }} placeholder="掃描或貼上票證 JSON" /></label>
+          <button className="text-button" type="button" onClick={loadLatest}>載入這個瀏覽器最近產生的 Demo 票證</button>
+        </details>
+        <div className="gate-actions"><button className="button button-primary" type="button" disabled={!parsed || parsed.invalid || Boolean(pendingAction)} onClick={redeem}>{pendingAction?.startsWith('redeem-') ? '鏈上核銷中…' : '確認核銷一張票'}</button></div>
         {(localError || parsed?.invalid) && <div className="inline-error" role="alert">{localError || parsed.invalid}</div>}
       </section>
       <section className={`validation-panel ${parsed && !parsed.invalid ? 'has-pass' : ''}`}>

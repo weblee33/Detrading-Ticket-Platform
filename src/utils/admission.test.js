@@ -17,4 +17,6 @@ test('round-trips a compact admission pass', () => {
 test('rejects malformed and unsupported passes', () => {
   expect(() => parseAdmissionPass('{}')).toThrow('版本');
   expect(() => parseAdmissionPass(encodeAdmissionPass({ ...pass, nonce: '0x01' }))).toThrow('nonce');
+  expect(() => parseAdmissionPass('null')).toThrow('格式');
+  expect(() => parseAdmissionPass('x'.repeat(4097))).toThrow('過長');
 });
