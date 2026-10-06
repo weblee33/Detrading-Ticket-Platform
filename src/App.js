@@ -1,8 +1,18 @@
+/* global BigInt */
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
+import {
+  calculateTotalWei,
+  friendlyError,
+  mapListing,
+  mapTicketInfo,
+  requirePositiveInteger,
+  validateMintForm,
+  waitForTransaction
+} from './contractUtils';
 
 // 請填入你的合約地址和 ABI
-const contractAddress = '0x0a52e1F23FbD9a08a73eE8b6Ea3dd7cDE7db2C0E';
+const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS || '0x0a52e1F23FbD9a08a73eE8b6Ea3dd7cDE7db2C0E';
 const contractABI = [
 			{
 				"inputs": [],
@@ -847,7 +857,7 @@ const contractABI = [
 				"type": "function"
 			}
 		];
-const ganacheChainId = '0x539'; // 1337
+const ganacheChainId = process.env.REACT_APP_CHAIN_ID || '0x539'; // 1337
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 // 主題色
@@ -916,10 +926,29 @@ function App() {
     to: ''
   });
   const [errorMsg, setErrorMsg] = useState('');
+  const [statusMsg, setStatusMsg] = useState('');
+  const [pendingAction, setPendingAction] = useState('');
+  const [listingInputs, setListingInputs] = useState({});
+  const [buyInputs, setBuyInputs] = useState({});
 
   useEffect(() => {
-    connectWallet();
-    // eslint-disable-next-line
+    if (!window.ethereum) return;
+    const reset = () => {
+      setAccount('');
+      setContract(null);
+      setIsOwner(false);
+      setTicketList([]);
+      setListings([]);
+      setStatusMsg('錢包帳號或網路已變更，請重新連線');
+    };
+    window.ethereum.on?.('accountsChanged', reset);
+    window.ethereum.on?.('chainChanged', reset);
+    window.ethereum.on?.('disconnect', reset);
+    return () => {
+      window.ethereum.removeListener?.('accountsChanged', reset);
+      window.ethereum.removeListener?.('chainChanged', reset);
+      window.ethereum.removeListener?.('disconnect', reset);
+    };
   }, []);
 
   const connectWallet = async () => {
@@ -929,8 +958,9 @@ function App() {
     setTicketList([]);
     setListings([]);
     setErrorMsg('');
+    setStatusMsg('');
     if (!window.ethereum) {
-      alert('請安裝MetaMask!');
+      setErrorMsg('找不到 MetaMask，請先安裝錢包擴充功能');
       return;
     }
     try {
@@ -942,7 +972,7 @@ function App() {
             params: [{ chainId: ganacheChainId }],
           });
         } catch {
-          alert('請手動切換到 Ganache 本地鏈 (chainId 1337)');
+          setErrorMsg(`請手動切換到設定的網路 (${ganacheChainId})`);
           return;
         }
       }
@@ -950,6 +980,9 @@ function App() {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const userAddress = await signer.getAddress();
+      if (!ethers.isAddress(contractAddress)) throw new Error('合約地址設定無效');
+      const bytecode = await provider.getCode(contractAddress);
+      if (bytecode === '0x') throw new Error('設定的合約地址沒有已部署的 bytecode');
       setAccount(userAddress);
       const contractInstance = new ethers.Contract(contractAddress, contractABI, signer);
       setContract(contractInstance);
@@ -957,8 +990,9 @@ function App() {
       const ownerAddress = await contractInstance.owner();
       setIsOwner(userAddress.toLowerCase() === ownerAddress.toLowerCase());
       setErrorMsg('');
+      setStatusMsg('錢包已連線');
     } catch (err) {
-      setErrorMsg('連接錢包失敗: ' + err.message);
+      setErrorMsg('連接錢包失敗: ' + friendlyError(err));
       setAccount('');
       setContract(null);
       setIsOwner(false);
@@ -976,7 +1010,7 @@ function App() {
           if (info && info.eventName) {
             const uri = await contract.uri(id);
             const balance = await contract.balanceOf(account, id);
-            tickets.push({ id, ...info, uri, balance: balance.toString() });
+            if (balance > 0n) tickets.push(mapTicketInfo(id, info, uri, balance));
           }
         } catch {}
       }
@@ -998,15 +1032,9 @@ function App() {
             listing &&
             listing.seller &&
             listing.seller !== ZERO_ADDRESS &&
-            Number(listing.amount) > 0
+            BigInt(listing.amount) > 0n
           ) {
-            result.push({
-              id,
-              seller: listing.seller,
-              tokenId: Number(listing.tokenId),
-              amount: Number(listing.amount),
-              pricePerItem: Number(listing.pricePerItem)
-            });
+            result.push(mapListing(id, listing));
           }
         } catch {}
       }
@@ -1025,50 +1053,77 @@ function App() {
   }, [contract, account]);
 
   const handleMint = async () => {
-    if (!contract) return;
+    if (!contract || pendingAction) return;
     const { eventName, eventDate, ticketType, metadataURI, amount, to } = form;
     try {
-      await contract.createTicketTypeAndMint(eventName, eventDate, ticketType, metadataURI, amount, to);
-      alert('鑄造成功！');
-      fetchTickets();
+      validateMintForm(form);
+      setPendingAction('mint'); setErrorMsg(''); setStatusMsg('等待錢包簽名…');
+      const tx = await contract.createTicketTypeAndMint(eventName.trim(), eventDate.trim(), ticketType.trim(), metadataURI.trim(), requirePositiveInteger(amount), to.trim());
+      setStatusMsg(`交易已送出：${tx.hash}`);
+      await waitForTransaction(tx);
+      setStatusMsg('鑄造交易已確認');
+      await fetchTickets();
     } catch (err) {
-      alert('鑄造失敗: ' + err.message);
-    }
+      setErrorMsg('鑄造失敗: ' + friendlyError(err));
+    } finally { setPendingAction(''); }
   };
 
   const handleListing = async (tokenId, amount, pricePerItem) => {
-    if (!contract) return;
+    if (!contract || pendingAction) return;
     try {
-      await contract.setApprovalForAll(contractAddress, true);
-      await contract.createListing(tokenId, amount, pricePerItem);
-      alert('掛單成功！');
-      fetchListings();
+      const quantity = requirePositiveInteger(amount, '掛單數量');
+      const price = requirePositiveInteger(pricePerItem, '單價');
+      const owned = BigInt(ticketList.find(ticket => ticket.id === tokenId)?.balance || 0);
+      if (quantity > owned) throw new Error('掛單數量超過持有餘額');
+      setPendingAction(`list-${tokenId}`); setErrorMsg('');
+      const approved = await contract.isApprovedForAll(account, contractAddress);
+      if (!approved) {
+        setStatusMsg('等待授權簽名…');
+        const approvalTx = await contract.setApprovalForAll(contractAddress, true);
+        setStatusMsg(`授權交易已送出：${approvalTx.hash}`);
+        await waitForTransaction(approvalTx);
+      }
+      setStatusMsg('等待掛單簽名…');
+      const tx = await contract.createListing(tokenId, quantity, price);
+      setStatusMsg(`掛單交易已送出：${tx.hash}`);
+      await waitForTransaction(tx);
+      setStatusMsg('掛單交易已確認');
+      await Promise.all([fetchTickets(), fetchListings()]);
     } catch (err) {
-      alert('掛單失敗: ' + err.message);
-    }
+      setErrorMsg('掛單失敗: ' + friendlyError(err));
+    } finally { setPendingAction(''); }
   };
 
   const handleBuy = async (listingId, buyAmount, pricePerItem) => {
-    if (!contract) return;
+    if (!contract || pendingAction) return;
     try {
-      await contract.buy(listingId, buyAmount, { value: ethers.parseUnits((buyAmount * pricePerItem).toString(), 'wei') });
-      alert('購買成功！');
-      fetchTickets();
-      fetchListings();
+      const listing = listings.find(item => item.id === listingId);
+      const quantity = requirePositiveInteger(buyAmount, '購買數量');
+      if (!listing || quantity > BigInt(listing.amount)) throw new Error('購買數量超過掛單餘額');
+      const value = calculateTotalWei(quantity, pricePerItem);
+      setPendingAction(`buy-${listingId}`); setErrorMsg(''); setStatusMsg('等待購買簽名…');
+      const tx = await contract.buy(listingId, quantity, { value });
+      setStatusMsg(`購買交易已送出：${tx.hash}`);
+      await waitForTransaction(tx);
+      setStatusMsg('購買交易已確認');
+      await Promise.all([fetchTickets(), fetchListings()]);
     } catch (err) {
-      alert('購買失敗: ' + err.message);
-    }
+      setErrorMsg('購買失敗: ' + friendlyError(err));
+    } finally { setPendingAction(''); }
   };
 
   const handleCancel = async (listingId) => {
-    if (!contract) return;
+    if (!contract || pendingAction) return;
     try {
-      await contract.cancelListing(listingId);
-      alert('取消掛單成功！');
-      fetchListings();
+      setPendingAction(`cancel-${listingId}`); setErrorMsg(''); setStatusMsg('等待取消簽名…');
+      const tx = await contract.cancelListing(listingId);
+      setStatusMsg(`取消交易已送出：${tx.hash}`);
+      await waitForTransaction(tx);
+      setStatusMsg('取消掛單交易已確認');
+      await Promise.all([fetchTickets(), fetchListings()]);
     } catch (err) {
-      alert('取消失敗: ' + err.message);
-    }
+      setErrorMsg('取消失敗: ' + friendlyError(err));
+    } finally { setPendingAction(''); }
   };
 
   const handleFormChange = (e) => {
@@ -1113,11 +1168,12 @@ function App() {
       minHeight: '100vh'
     }}>
       <h2 style={{ color: theme.primary, letterSpacing: 2, marginBottom: 16 }}>🎫 演唱會 NFT 票券交易平台</h2>
-      <button style={buttonStyle} onClick={connectWallet}>重新選擇帳號登入</button>
+      <button style={buttonStyle} onClick={connectWallet} disabled={Boolean(pendingAction)}>連接／重新選擇帳號</button>
       <div style={{ fontSize: 15, margin: '8px 0 16px 0', color: theme.primary }}>
         目前帳戶：{account}
       </div>
       {errorMsg && <div style={{ color: theme.error, textAlign: 'center', margin: 12 }}>{errorMsg}</div>}
+      {statusMsg && <div role="status" style={{ color: theme.primary, textAlign: 'center', margin: 12 }}>{statusMsg}</div>}
       <hr style={{ margin: '24px 0', border: `1px solid ${theme.border}` }} />
 
       {isOwner && (
@@ -1136,7 +1192,7 @@ function App() {
           <input name="metadataURI" placeholder="Metadata URI" value={form.metadataURI} onChange={handleFormChange} style={inputStyle} />
           <input name="amount" type="number" placeholder="數量" value={form.amount} onChange={handleFormChange} style={inputStyle} />
           <input name="to" placeholder="接收地址" value={form.to} onChange={handleFormChange} style={inputStyle} />
-          <button style={buttonAccent} onClick={handleMint}>鑄造 NFT 票券</button>
+          <button style={buttonAccent} disabled={Boolean(pendingAction)} onClick={handleMint}>{pendingAction === 'mint' ? '處理中…' : '鑄造 NFT 票券'}</button>
         </div>
       )}
 
@@ -1164,13 +1220,9 @@ function App() {
               我的餘額：{ticket.balance}
             </div>
             <div>
-              <input type="number" min="1" max={ticket.balance} placeholder="掛單數量" id={`amount-${ticket.id}`} style={inputStyle} />
-              <input type="number" min="1" placeholder="單價（wei）" id={`price-${ticket.id}`} style={inputStyle} />
-              <button style={buttonStyle} onClick={() => {
-                const amount = parseInt(document.getElementById(`amount-${ticket.id}`).value);
-                const price = parseInt(document.getElementById(`price-${ticket.id}`).value);
-                handleListing(ticket.id, amount, price);
-              }}>掛單出售</button>
+              <input inputMode="numeric" placeholder="掛單數量" value={listingInputs[ticket.id]?.amount || ''} onChange={e => setListingInputs(current => ({ ...current, [ticket.id]: { ...current[ticket.id], amount: e.target.value } }))} style={inputStyle} />
+              <input inputMode="numeric" placeholder="單價（wei）" value={listingInputs[ticket.id]?.price || ''} onChange={e => setListingInputs(current => ({ ...current, [ticket.id]: { ...current[ticket.id], price: e.target.value } }))} style={inputStyle} />
+              <button style={buttonStyle} disabled={Boolean(pendingAction)} onClick={() => handleListing(ticket.id, listingInputs[ticket.id]?.amount, listingInputs[ticket.id]?.price)}>{pendingAction === `list-${ticket.id}` ? '處理中…' : '掛單出售'}</button>
             </div>
           </div>
         ))}
@@ -1198,14 +1250,11 @@ function App() {
               賣家: {listing.seller}
             </div>
             <div>
-              <input type="number" min="1" max={listing.amount} placeholder="購買數量" id={`buyamount-${listing.id}`} style={inputStyle} />
-              <button style={buttonAccent} onClick={() => {
-                const buyAmount = parseInt(document.getElementById(`buyamount-${listing.id}`).value);
-                handleBuy(listing.id, buyAmount, listing.pricePerItem);
-              }}>購買</button>
+              <input inputMode="numeric" placeholder="購買數量" value={buyInputs[listing.id] || ''} onChange={e => setBuyInputs(current => ({ ...current, [listing.id]: e.target.value }))} style={inputStyle} />
+              <button style={buttonAccent} disabled={Boolean(pendingAction)} onClick={() => handleBuy(listing.id, buyInputs[listing.id], listing.pricePerItem)}>{pendingAction === `buy-${listing.id}` ? '處理中…' : '購買'}</button>
               {listing.seller && account &&
                 listing.seller.toLowerCase() === account.toLowerCase() && (
-                  <button style={buttonStyle} onClick={() => handleCancel(listing.id)}>取消掛單</button>
+                  <button style={buttonStyle} disabled={Boolean(pendingAction)} onClick={() => handleCancel(listing.id)}>{pendingAction === `cancel-${listing.id}` ? '處理中…' : '取消掛單'}</button>
               )}
             </div>
           </div>
