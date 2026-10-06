@@ -18,11 +18,12 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "chain": "hardhat node",
-    "compile:contract": "hardhat compile",
+    "compile:contract": "hardhat compile && node scripts/export-abi.js",
     "test:contract": "hardhat test",
     "deploy:local": "hardhat run scripts/deploy.js --network localhost",
     "seed:local": "hardhat run scripts/seed-demo.js --network localhost",
     "verify:demo": "bash scripts/verify-demo.sh",
+    "demo": "bash scripts/start-demo.sh",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

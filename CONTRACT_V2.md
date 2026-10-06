@@ -26,6 +26,12 @@ npm run seed:local
 npm start
 ```
 
+For a guided local demonstration, one command starts the chain, deploys, seeds and launches the frontend:
+
+```bash
+npm run demo
+```
+
 Deployment writes the generated address and chain ID to `src/deployments/local.json`. The frontend loads that file unless environment variables override it.
 
 ## Verification
