@@ -6,10 +6,14 @@ import {ERC1155Supply} from "@openzeppelin/contracts/token/ERC1155/extensions/ER
 import {ERC1155Holder} from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 /// @title TicketMarketplaceV2
 /// @notice Reproducible v2 contract for the demo. This is not claimed to be the lost original contract.
 contract TicketMarketplaceV2 is ERC1155Supply, ERC1155Holder, Ownable, ReentrancyGuard {
+    using MessageHashUtils for bytes32;
+
     struct TicketInfo {
         string eventName;
         string eventDate;
@@ -35,12 +39,24 @@ contract TicketMarketplaceV2 is ERC1155Supply, ERC1155Holder, Ownable, Reentranc
     error NotListingSeller();
     error IncorrectPayment(uint256 expected, uint256 received);
     error SellerPaymentFailed();
+    error NotGateStaff();
+    error PassExpired();
+    error PassDeadlineTooFar();
+    error PassAlreadyUsed();
+    error InvalidPassSignature();
 
     uint256 public nextTokenId = 1;
     uint256 public nextListingId = 1;
 
     mapping(uint256 => TicketInfo) public ticketInfos;
     mapping(uint256 => Listing) public listings;
+    mapping(address => bool) public gateStaff;
+    mapping(bytes32 => bool) public usedPasses;
+
+    bytes32 public constant REDEEM_TYPEHASH = keccak256(
+        "TicketAdmission(address contractAddress,uint256 chainId,address holder,uint256 tokenId,bytes32 nonce,uint256 deadline)"
+    );
+    uint256 public constant MAX_PASS_VALIDITY = 10 minutes;
 
     event TicketCreated(
         uint256 indexed tokenId,
@@ -58,8 +74,23 @@ contract TicketMarketplaceV2 is ERC1155Supply, ERC1155Holder, Ownable, Reentranc
     );
     event Sale(uint256 indexed listingId, address indexed buyer, uint256 amount);
     event Cancelled(uint256 indexed listingId);
+    event GateStaffUpdated(address indexed account, bool allowed);
+    event TicketRedeemed(
+        bytes32 indexed passId,
+        uint256 indexed tokenId,
+        address indexed holder,
+        address operator
+    );
 
-    constructor() ERC1155("") Ownable(msg.sender) {}
+    constructor() ERC1155("") Ownable(msg.sender) {
+        gateStaff[msg.sender] = true;
+        emit GateStaffUpdated(msg.sender, true);
+    }
+
+    modifier onlyGateStaff() {
+        if (!gateStaff[msg.sender]) revert NotGateStaff();
+        _;
+    }
 
     function createTicketTypeAndMint(
         string calldata eventName,
@@ -130,6 +161,49 @@ contract TicketMarketplaceV2 is ERC1155Supply, ERC1155Holder, Ownable, Reentranc
         _safeTransferFrom(address(this), listing.seller, listing.tokenId, listing.amount, "");
 
         emit Cancelled(listingId);
+    }
+
+    function setGateStaff(address account, bool allowed) external onlyOwner {
+        if (account == address(0)) revert InvalidRecipient();
+        gateStaff[account] = allowed;
+        emit GateStaffUpdated(account, allowed);
+    }
+
+    function getRedemptionDigest(
+        address holder,
+        uint256 tokenId,
+        bytes32 nonce,
+        uint256 deadline
+    ) public view returns (bytes32) {
+        return keccak256(abi.encode(
+            REDEEM_TYPEHASH,
+            address(this),
+            block.chainid,
+            holder,
+            tokenId,
+            nonce,
+            deadline
+        ));
+    }
+
+    /// @notice Redeems exactly one ERC-1155 ticket after verifying the holder's short-lived signed pass.
+    function redeemTicket(
+        address holder,
+        uint256 tokenId,
+        bytes32 nonce,
+        uint256 deadline,
+        bytes calldata signature
+    ) external onlyGateStaff nonReentrant {
+        if (block.timestamp > deadline) revert PassExpired();
+        if (deadline > block.timestamp + MAX_PASS_VALIDITY) revert PassDeadlineTooFar();
+        bytes32 passId = getRedemptionDigest(holder, tokenId, nonce, deadline);
+        if (usedPasses[passId]) revert PassAlreadyUsed();
+        if (!exists(tokenId) || balanceOf(holder, tokenId) == 0) revert InsufficientTicketBalance();
+        if (ECDSA.recover(passId.toEthSignedMessageHash(), signature) != holder) revert InvalidPassSignature();
+
+        usedPasses[passId] = true;
+        _burn(holder, tokenId, 1);
+        emit TicketRedeemed(passId, tokenId, holder, msg.sender);
     }
 
     function uri(uint256 tokenId) public view override returns (string memory) {

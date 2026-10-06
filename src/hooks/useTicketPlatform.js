@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ethers } from 'ethers';
 import { platformConfig, roleForAccount } from '../config/platform';
 import { calculateTotalWei, friendlyError, mapListing, mapTicketInfo, requirePositiveInteger, validateMintForm, waitForTransaction } from '../contractUtils';
+import { encodeAdmissionPass, parseAdmissionPass } from '../utils/admission';
 
 const EMPTY_STATUS = { phase: 'idle', message: '', hash: '' };
 
@@ -10,6 +11,7 @@ export function useTicketPlatform() {
   const [account, setAccount] = useState('');
   const [contract, setContract] = useState(null);
   const [isOwner, setIsOwner] = useState(false);
+  const [isGateStaff, setIsGateStaff] = useState(false);
   const [tickets, setTickets] = useState([]);
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -23,6 +25,7 @@ export function useTicketPlatform() {
     setAccount('');
     setContract(null);
     setIsOwner(false);
+    setIsGateStaff(false);
     setTickets([]);
     setListings([]);
     setPendingAction('');
@@ -104,12 +107,13 @@ export function useTicketPlatform() {
       const signer = await provider.getSigner();
       const userAddress = await signer.getAddress();
       const instance = new ethers.Contract(platformConfig.address, platformConfig.abi, signer);
-      const ownerAddress = await instance.owner();
+      const [ownerAddress, gateAccess] = await Promise.all([instance.owner(), instance.gateStaff(userAddress)]);
       const ownerMatch = ownerAddress.toLowerCase() === userAddress.toLowerCase();
 
       setAccount(userAddress);
       setContract(instance);
       setIsOwner(ownerMatch);
+      setIsGateStaff(gateAccess);
       setStatus({ phase: 'confirmed', message: '錢包已連線，鏈上資料已同步。', hash: '' });
       await loadData(instance, userAddress);
     } catch (reason) {
@@ -182,11 +186,54 @@ export function useTicketPlatform() {
     `cancel-${listingId}`, '請在錢包確認取消掛單…', () => contract.cancelListing(listingId)
   ), [contract, runTransaction]);
 
+  const createAdmissionPass = useCallback(async tokenId => {
+    if (!contract || pendingAction) return null;
+    const ticket = tickets.find(item => item.id === tokenId);
+    if (!ticket || BigInt(ticket.balance) < 1n) throw new Error('目前錢包沒有可核銷的這張票');
+    setPendingAction(`pass-${tokenId}`);
+    setError('');
+    setStatus({ phase: 'signing', message: '請在錢包簽署限時入場票證…', hash: '' });
+    try {
+      const nonce = ethers.hexlify(ethers.randomBytes(32));
+      const deadline = Math.floor(Date.now() / 1000) + 300;
+      const digest = await contract.getRedemptionDigest(account, tokenId, nonce, deadline);
+      const signature = await contract.runner.signMessage(ethers.getBytes(digest));
+      const pass = {
+        version: 1,
+        contract: platformConfig.address,
+        chainId: platformConfig.chainId,
+        holder: account,
+        tokenId: String(tokenId),
+        nonce,
+        deadline: String(deadline),
+        signature
+      };
+      window.localStorage.setItem('detrading.latestAdmissionPass', encodeAdmissionPass(pass));
+      setStatus({ phase: 'confirmed', message: '限時入場票證已產生，有效時間五分鐘。', hash: '' });
+      return pass;
+    } catch (reason) {
+      setError(`票證產生失敗：${friendlyError(reason)}`);
+      setStatus(EMPTY_STATUS);
+      throw reason;
+    } finally {
+      setPendingAction('');
+    }
+  }, [account, contract, pendingAction, tickets]);
+
+  const redeemAdmissionPass = useCallback(input => {
+    const pass = parseAdmissionPass(input);
+    if (pass.contract.toLowerCase() !== platformConfig.address.toLowerCase()) throw new Error('票證不屬於目前 Demo 合約');
+    if (pass.chainId.toLowerCase() !== platformConfig.chainId.toLowerCase()) throw new Error('票證不屬於目前 Demo 網路');
+    return runTransaction(`redeem-${pass.nonce}`, '請在錢包確認鏈上核銷交易…', () => contract.redeemTicket(
+      pass.holder, pass.tokenId, pass.nonce, pass.deadline, pass.signature
+    ));
+  }, [contract, runTransaction]);
+
   const ownedTickets = useMemo(() => tickets.filter(ticket => BigInt(ticket.balance) > 0n), [tickets]);
   const role = useMemo(() => roleForAccount(account, isOwner), [account, isOwner]);
 
   return {
-    account, isOwner, role, tickets, ownedTickets, listings, loading, pendingAction, error, status,
-    connect, refresh: () => loadData(contract, account), mint, list, buy, cancel
+    account, isOwner, isGateStaff, role, tickets, ownedTickets, listings, loading, pendingAction, error, status,
+    connect, refresh: () => loadData(contract, account), mint, list, buy, cancel, createAdmissionPass, redeemAdmissionPass
   };
 }

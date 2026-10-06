@@ -19,6 +19,7 @@ Conventional concert ticketing systems suffer from severe scalping, counterfeit 
 * **Custom Metadata:** Metadata includes event name, date, ticket type, and image URI (via IPFS).
 * **On-chain Marketplace:** Users can list, buy, and cancel ticket listings on-chain.
 * **React Frontend with MetaMask Integration:** User-friendly UI to interact with contracts and manage tickets.
+* **Replay-resistant Admission:** Five-minute holder signatures, random nonces, authorized gate staff and one-time on-chain redemption.
 
 ## Smart Contract Details
 
@@ -101,6 +102,7 @@ npm run test:contract
 ```
 
 For the full local deployment and seeded demo sequence, see `CONTRACT_V2.md`.
+For the QR admission trust model and security boundaries, see `ADMISSION_SECURITY.md`.
 
 ## Technologies Used
 

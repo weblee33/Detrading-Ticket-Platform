@@ -37,3 +37,9 @@ Results on 2026-10-06:
 - `npm run build`: **passed**, production JavaScript and responsive CSS compiled successfully.
 - `npm run demo`: **passed**, local chain, deployment, seed data and React development server started successfully.
 - The UI now exposes marketplace, wallet holdings and an owner-only organizer console, with deterministic Demo role labels and transaction lifecycle banners.
+
+## Replay-resistant admission
+
+- `npm run test:contract`: **passed**, 14 tests including authorized redemption, ticket burn, used-pass tracking, replay rejection, expiration, maximum lifetime, invalid signature and unauthorized operator.
+- `CI=true npm test -- --runInBand`: **passed**, 4 suites / 16 tests including admission payload encoding and validation.
+- `npm run verify:demo`: **passed**, deployment, seed data, signed admission, on-chain redemption and replay rejection.

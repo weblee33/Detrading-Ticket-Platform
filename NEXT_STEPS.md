@@ -2,10 +2,9 @@
 
 ## Replay-resistant admission
 
-- Define whether each ERC-1155 unit is individually identifiable or only quantity-based.
-- Use a short-lived organizer-signed payload with event, holder, token ID, nonce and expiry.
-- Redeem the nonce atomically on-chain or in an auditable admission service.
-- Acceptance: the same proof cannot be redeemed twice, expired proofs fail, and transferred tickets cannot reuse the prior holder's proof.
+- Implemented in Demo v2: holder-signed contract/chain-bound payload, five-minute expiry, random nonce, authorized gate staff, atomic used-pass marking and one-unit burn.
+- Verified: replay, expiry, invalid signature, insufficient balance and unauthorized operator are rejected.
+- Remaining: camera scanner, event-specific admission windows, managed staff credentials and optional post-entry collectible.
 
 ## Controlled resale
 

@@ -31,4 +31,5 @@ fi
 
 npm run deploy:local
 npm run seed:local
+npx hardhat run scripts/verify-admission.js --network localhost
 node -e "const d=require('./src/deployments/local.json'); if (!d.address || d.chainId !== '0x7a69') process.exit(1); console.log('Demo deployment verified:', d.address)"

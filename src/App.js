@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import './App.css';
 import EmptyState from './components/EmptyState';
+import AdmissionPassView from './components/AdmissionPassView';
+import GateView from './components/GateView';
 import MarketplaceView from './components/MarketplaceView';
 import MyTicketsView from './components/MyTicketsView';
 import OrganizerView from './components/OrganizerView';
@@ -11,6 +13,8 @@ import { useTicketPlatform } from './hooks/useTicketPlatform';
 const pages = [
   { id: 'market', label: '探索市場' },
   { id: 'tickets', label: '我的票券' },
+  { id: 'admission', label: '入場票證' },
+  { id: 'gate', label: '驗票工作台', gateOnly: true },
   { id: 'organizer', label: '主辦方後台', ownerOnly: true }
 ];
 
@@ -20,9 +24,10 @@ function App() {
 
   useEffect(() => {
     if (page === 'organizer' && !platform.isOwner) setPage('market');
-  }, [page, platform.isOwner]);
+    if (page === 'gate' && !platform.isGateStaff) setPage('market');
+  }, [page, platform.isOwner, platform.isGateStaff]);
 
-  const visiblePages = pages.filter(item => !item.ownerOnly || platform.isOwner);
+  const visiblePages = pages.filter(item => (!item.ownerOnly || platform.isOwner) && (!item.gateOnly || platform.isGateStaff));
   const openListings = platform.listings.reduce((sum, item) => sum + Number(item.amount), 0);
 
   return (
@@ -56,6 +61,8 @@ function App() {
         <section className="workspace">
           {page === 'market' && <><div className="section-heading"><div><span className="section-kicker">Secondary Market</span><h2>鏈上二手票券</h2></div><p>票券由智慧合約託管，完成付款後才轉移給買家。</p></div><MarketplaceView account={platform.account} listings={platform.listings} loading={platform.loading} pendingAction={platform.pendingAction} onBuy={platform.buy} onCancel={platform.cancel} onConnect={platform.connect} /></>}
           {page === 'tickets' && <><div className="section-heading"><div><span className="section-kicker">My Wallet</span><h2>我的鏈上票券</h2></div><p>只顯示目前錢包實際持有、尚未進入市場託管的票券。</p></div><MyTicketsView account={platform.account} tickets={platform.ownedTickets} loading={platform.loading} pendingAction={platform.pendingAction} onList={platform.list} onConnect={platform.connect} /></>}
+          {page === 'admission' && <AdmissionPassView account={platform.account} tickets={platform.ownedTickets} pendingAction={platform.pendingAction} onCreatePass={platform.createAdmissionPass} onConnect={platform.connect} />}
+          {page === 'gate' && platform.isGateStaff && <GateView tickets={platform.tickets} pendingAction={platform.pendingAction} onRedeem={platform.redeemAdmissionPass} />}
           {page === 'organizer' && platform.isOwner && <OrganizerView account={platform.account} tickets={platform.tickets} listings={platform.listings} pendingAction={platform.pendingAction} onMint={platform.mint} />}
           {page === 'organizer' && !platform.isOwner && <EmptyState title="需要主辦方帳號" detail="請切換至 Hardhat Account #0 後重新連接。" />}
         </section>
