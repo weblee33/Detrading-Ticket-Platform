@@ -30,3 +30,10 @@ Results on 2026-10-06:
 - `npm run test:contract`: **passed**, 9 contract tests.
 - `npm run verify:demo`: **passed**. A temporary Hardhat node deployed `TicketMarketplaceV2`, seeded VIP/general tickets and created an escrowed secondary-market listing.
 - Contract tests cover organizer authorization, metadata/supply, invalid minting, required approval, escrow, insufficient balances, exact payment, complete purchase and seller-only cancellation.
+
+## Demo interface
+
+- `CI=true npm test -- --runInBand`: **passed**, 3 suites / 14 tests.
+- `npm run build`: **passed**, production JavaScript and responsive CSS compiled successfully.
+- `npm run demo`: **passed**, local chain, deployment, seed data and React development server started successfully.
+- The UI now exposes marketplace, wallet holdings and an owner-only organizer console, with deterministic Demo role labels and transaction lifecycle banners.
