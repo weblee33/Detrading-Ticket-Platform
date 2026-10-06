@@ -28,6 +28,9 @@ Import only the publicly known development accounts printed by `npm run chain`. 
 4. Open **我的票券** to show Bob's new on-chain balance.
 5. Reconnect Alice, create or cancel a listing to demonstrate escrow behavior.
 6. Connect the organizer (Account #0), open **主辦方後台**, and mint a new ticket type to a selected Demo address.
+7. Connect Bob, open **入場票證**, select his VIP ticket and sign a five-minute QR pass.
+8. Connect gate staff (Account #3), open **驗票工作台**, load the latest Demo pass and redeem it.
+9. Paste the same pass again to demonstrate that the contract rejects replay.
 
 ## Interface states to explain
 
@@ -46,4 +49,4 @@ npm run build
 npm run verify:demo
 ```
 
-The current Demo covers minting, holdings, escrowed listing, purchase and cancellation. Replay-resistant QR admission is the next planned feature.
+The current Demo covers minting, holdings, escrowed listing, purchase, cancellation and replay-resistant admission. See `ADMISSION_SECURITY.md` for the trust model and remaining production work.

@@ -1,6 +1,7 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
 const { loadFixture } = require('@nomicfoundation/hardhat-network-helpers');
+const { time } = require('@nomicfoundation/hardhat-network-helpers');
 
 describe('TicketMarketplaceV2', function () {
   async function deployFixture() {
@@ -27,6 +28,14 @@ describe('TicketMarketplaceV2', function () {
     await contract.connect(alice).setApprovalForAll(address, true);
     await contract.connect(alice).createListing(1, 2, ethers.parseEther('0.02'));
     return context;
+  }
+
+  async function signedPass(contract, holder, tokenId = 1, deadlineOffset = 300) {
+    const nonce = ethers.hexlify(ethers.randomBytes(32));
+    const deadline = BigInt(await time.latest()) + BigInt(deadlineOffset);
+    const digest = await contract.getRedemptionDigest(holder.address, tokenId, nonce, deadline);
+    const signature = await holder.signMessage(ethers.getBytes(digest));
+    return { nonce, deadline, signature };
   }
 
   it('allows only the organizer to create ticket types', async function () {
@@ -107,5 +116,54 @@ describe('TicketMarketplaceV2', function () {
     await contract.connect(alice).cancelListing(1);
     expect(await contract.balanceOf(alice.address, 1)).to.equal(3);
     expect((await contract.listings(1)).seller).to.equal(ethers.ZeroAddress);
+  });
+
+  it('lets authorized gate staff redeem one signed ticket', async function () {
+    const { contract, organizer, alice, other } = await loadFixture(mintedFixture);
+    await contract.connect(organizer).setGateStaff(other.address, true);
+    const pass = await signedPass(contract, alice);
+    const digest = await contract.getRedemptionDigest(alice.address, 1, pass.nonce, pass.deadline);
+
+    await expect(contract.connect(other).redeemTicket(alice.address, 1, pass.nonce, pass.deadline, pass.signature))
+      .to.emit(contract, 'TicketRedeemed')
+      .withArgs(digest, 1, alice.address, other.address);
+    expect(await contract.balanceOf(alice.address, 1)).to.equal(2);
+    expect(await contract.usedPasses(digest)).to.equal(true);
+  });
+
+  it('rejects replay of the same signed pass', async function () {
+    const { contract, alice } = await loadFixture(mintedFixture);
+    const pass = await signedPass(contract, alice);
+    await contract.redeemTicket(alice.address, 1, pass.nonce, pass.deadline, pass.signature);
+    await expect(contract.redeemTicket(alice.address, 1, pass.nonce, pass.deadline, pass.signature))
+      .to.be.revertedWithCustomError(contract, 'PassAlreadyUsed');
+  });
+
+  it('rejects expired and incorrectly signed passes', async function () {
+    const { contract, alice, bob } = await loadFixture(mintedFixture);
+    const expired = await signedPass(contract, alice, 1, -1);
+    await expect(contract.redeemTicket(alice.address, 1, expired.nonce, expired.deadline, expired.signature))
+      .to.be.revertedWithCustomError(contract, 'PassExpired');
+
+    const nonce = ethers.hexlify(ethers.randomBytes(32));
+    const deadline = BigInt(await time.latest()) + 300n;
+    const digest = await contract.getRedemptionDigest(alice.address, 1, nonce, deadline);
+    const wrongSignature = await bob.signMessage(ethers.getBytes(digest));
+    await expect(contract.redeemTicket(alice.address, 1, nonce, deadline, wrongSignature))
+      .to.be.revertedWithCustomError(contract, 'InvalidPassSignature');
+  });
+
+  it('rejects passes whose deadline is too far in the future', async function () {
+    const { contract, alice } = await loadFixture(mintedFixture);
+    const pass = await signedPass(contract, alice, 1, 1200);
+    await expect(contract.redeemTicket(alice.address, 1, pass.nonce, pass.deadline, pass.signature))
+      .to.be.revertedWithCustomError(contract, 'PassDeadlineTooFar');
+  });
+
+  it('rejects redemption by an unauthorized operator', async function () {
+    const { contract, alice, other } = await loadFixture(mintedFixture);
+    const pass = await signedPass(contract, alice);
+    await expect(contract.connect(other).redeemTicket(alice.address, 1, pass.nonce, pass.deadline, pass.signature))
+      .to.be.revertedWithCustomError(contract, 'NotGateStaff');
   });
 });

@@ -6,6 +6,8 @@ async function main() {
   const [organizer, alice, bob, gateStaff] = await hre.ethers.getSigners();
   const contract = await hre.ethers.getContractAt('TicketMarketplaceV2', deployment.address, organizer);
 
+  await (await contract.setGateStaff(gateStaff.address, true)).wait();
+
   await (await contract.createTicketTypeAndMint(
     '2026 Demo Concert',
     '2026-12-20 19:30',
