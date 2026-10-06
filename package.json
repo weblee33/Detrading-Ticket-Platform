@@ -17,6 +17,12 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "chain": "hardhat node",
+    "compile:contract": "hardhat compile",
+    "test:contract": "hardhat test",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
+    "seed:local": "hardhat run scripts/seed-demo.js --network localhost",
+    "verify:demo": "bash scripts/verify-demo.sh",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
@@ -36,5 +42,11 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts": "^5.6.1",
+    "hardhat": "^2.29.1",
+    "solc": "^0.8.26"
   }
 }
