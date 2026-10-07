@@ -8,3 +8,7 @@ test('identifies deterministic demo roles', () => {
 test('uses a safe generic role for unknown wallets', () => {
   expect(roleForAccount('0x0000000000000000000000000000000000000001', false).name).toBe('一般持票人');
 });
+
+test('identifies authorized gate staff even on a public deployment', () => {
+  expect(roleForAccount('0x0000000000000000000000000000000000000001', false, true).name).toBe('驗票員');
+});

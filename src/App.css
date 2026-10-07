@@ -141,6 +141,7 @@ textarea { min-height:150px; resize:vertical; }
 .text-button { padding:0; border:0; color:var(--blue); background:none; cursor:pointer; font:inherit; font-size:12px; font-weight:700; }
 .gate-actions { display:grid; gap:10px; }
 .inline-error { margin-top:14px; padding:11px 13px; border-radius:10px; color:#a62b40; background:#fff0f3; font-size:13px; }
+.transaction-banner a { display:block; margin-top:2px; color:inherit; font-size:12px; font-weight:700; text-decoration:underline; text-underline-offset:2px; }
 .validation-panel { display:grid; align-content:center; }
 .validation-panel.has-pass { background:#f5fffb; border-color:#c8f0e4; }
 .validation-mark { width:48px; height:48px; display:grid; place-items:center; border-radius:50%; color:#fff; background:#20b486; font-size:24px; }

@@ -51,3 +51,11 @@ Results on 2026-10-06:
 - `npm run build`: **passed**. The optimized bundle compiled with non-blocking upstream `html5-qrcode` source-map and dated Browserslist warnings.
 - `npm run demo`: **passed**. The local chain deployed and seeded successfully, and the React development bundle compiled.
 - Camera behavior is unit-tested with a browser API mock. Physical device/browser compatibility still requires a real HTTPS or localhost environment and is documented as production work.
+
+## Mobile HTTPS and Sepolia deployment support
+
+- `npm run test:contract`: **passed**, 17 tests. Three deployment tests cover valid configuration, HTTPS/confirmation enforcement and separate role wallets; the original 14 contract tests remain green.
+- `CI=true npm test -- --runInBand`: **passed**, 5 suites / 20 tests including public-network gate-role identification.
+- `npm run validate:sepolia-env`: **passed** with safe synthetic values and **rejected** missing configuration as intended; private-key contents are never printed.
+- `npm run build`: **passed** with the existing non-blocking upstream `html5-qrcode` source-map and dated Browserslist warnings.
+- No Sepolia transaction was submitted during automated verification. A user-controlled test-only deployer, HTTPS RPC and funded role wallets are required for physical deployment testing.

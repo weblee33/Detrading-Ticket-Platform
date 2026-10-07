@@ -5,6 +5,8 @@
 > [!IMPORTANT]
 > 本專案使用本機 Hardhat 測試鏈與公開的開發帳號，僅供展示與開發。尚未經獨立資安審計，不可直接部署至主網或承載真實資金。
 
+手機正式展示可部署至 Sepolia 測試網與 Vercel HTTPS，完整步驟見 [`MOBILE_DEMO.md`](MOBILE_DEMO.md)。此流程只使用拋棄式測試錢包與測試 ETH。
+
 ## Demo 能展示什麼
 
 | 身分 | 可操作功能 |
@@ -123,6 +125,24 @@ npm start
 
 部署結果會寫入 `src/deployments/local.json`。也可複製 `.env.example` 為 `.env.local`，以 `REACT_APP_CHAIN_ID` 與 `REACT_APP_CONTRACT_ADDRESS` 覆寫；若目標地址沒有合約 bytecode，前端會拒絕繼續。
 
+## 手機 HTTPS／Sepolia Demo
+
+公開測試網流程提供：
+
+- 部署前的 RPC、私鑰格式、角色錢包與明確確認旗標檢查。
+- Sepolia 合約部署，以及不接觸 Alice、Bob、Gate 私鑰的票券初始化。
+- Vercel HTTPS 建置與相機權限標頭。
+- 公開測試網角色標籤與 Etherscan 交易連結。
+
+```bash
+cp .env.sepolia.example .env
+npm run validate:sepolia-env
+npm run deploy:sepolia
+npm run seed:sepolia
+```
+
+不要將 `.env`、部署私鑰或任何真實錢包憑證加入 Git。逐步操作與現場備援請見 [`MOBILE_DEMO.md`](MOBILE_DEMO.md)。
+
 ## 專案結構
 
 ```text
@@ -154,6 +174,7 @@ src/utils/admission.js              QR 票證編碼與格式驗證
 - React 19、ethers.js 6
 - `qrcode`（產生票證）與 `html5-qrcode`（相機／圖片辨識）
 - MetaMask、本機 Hardhat JSON-RPC
+- Sepolia 測試網、Vercel HTTPS（手機 Demo 選用）
 
 ## License
 

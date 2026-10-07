@@ -7,6 +7,11 @@
 - Camera and image-based QR scanning is implemented with payload/image limits, permission feedback and manual Demo fallback.
 - Remaining: event-specific admission windows, managed staff credentials, cross-device browser testing and optional post-entry collectible.
 
+## Mobile public-testnet demo
+
+- Implemented: guarded Sepolia deployment, role-safe seeding, Vercel HTTPS configuration, public-network role labels and block-explorer transaction links.
+- Remaining operational step: deploy with user-controlled throwaway test wallets, run physical iOS/Android compatibility checks and record the tested browser/device matrix.
+
 ## Controlled resale
 
 - Add per-event maximum resale price, resale deadline, cancellation and refund rules to the contract.
