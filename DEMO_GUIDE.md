@@ -1,5 +1,7 @@
 # Demo guide
 
+For a phone camera over HTTPS with a public Sepolia test deployment, use `MOBILE_DEMO.md`. The workflow below remains the fastest deterministic local demonstration.
+
 ## One-command start
 
 Install Node.js 18+ and MetaMask, then run:

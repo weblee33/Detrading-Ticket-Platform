@@ -230,7 +230,7 @@ export function useTicketPlatform() {
   }, [contract, runTransaction]);
 
   const ownedTickets = useMemo(() => tickets.filter(ticket => BigInt(ticket.balance) > 0n), [tickets]);
-  const role = useMemo(() => roleForAccount(account, isOwner), [account, isOwner]);
+  const role = useMemo(() => roleForAccount(account, isOwner, isGateStaff), [account, isGateStaff, isOwner]);
 
   return {
     account, isOwner, isGateStaff, role, tickets, ownedTickets, listings, loading, pendingAction, error, status,

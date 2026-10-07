@@ -1,4 +1,5 @@
 require('@nomicfoundation/hardhat-toolbox');
+require('dotenv').config();
 
 const { subtask } = require('hardhat/config');
 const { TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD } = require('hardhat/builtin-tasks/task-names');
@@ -16,6 +17,18 @@ subtask(TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD, async ({ solcVersion }, hre, runSu
   return runSuper();
 });
 
+const networks = {
+  localhost: { url: process.env.LOCAL_RPC_URL || 'http://127.0.0.1:8545' }
+};
+
+if (process.env.SEPOLIA_RPC_URL && process.env.DEPLOYER_PRIVATE_KEY) {
+  networks.sepolia = {
+    url: process.env.SEPOLIA_RPC_URL,
+    accounts: [process.env.DEPLOYER_PRIVATE_KEY],
+    chainId: 11155111
+  };
+}
+
 module.exports = {
   solidity: {
     version: '0.8.26',
@@ -24,7 +37,5 @@ module.exports = {
       optimizer: { enabled: true, runs: 200 }
     }
   },
-  networks: {
-    localhost: { url: process.env.LOCAL_RPC_URL || 'http://127.0.0.1:8545' }
-  }
+  networks
 };
